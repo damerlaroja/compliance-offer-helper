@@ -2,15 +2,33 @@ import boto3
 import re
 import unicodedata
 import time
+import os
 from botocore.exceptions import ClientError, ReadTimeoutError
 from botocore.config import Config
 
-# Initialize Bedrock runtime client with timeout
+# Initialize Bedrock runtime client with timeout and optional env credentials
 config = Config(
     connect_timeout=5,
     read_timeout=30
 )
-bedrock_client = boto3.client('bedrock-runtime', region_name='us-east-1', config=config)
+
+# Check for environment variables
+aws_access_key_id = os.environ.get('AWS_ACCESS_KEY_ID')
+aws_secret_access_key = os.environ.get('AWS_SECRET_ACCESS_KEY')
+aws_region = os.environ.get('AWS_DEFAULT_REGION', 'us-east-1')
+
+if aws_access_key_id and aws_secret_access_key:
+    # Use environment variables
+    bedrock_client = boto3.client(
+        'bedrock-runtime',
+        region_name=aws_region,
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key,
+        config=config
+    )
+else:
+    # Fall back to default boto3 credential chain
+    bedrock_client = boto3.client('bedrock-runtime', region_name=aws_region, config=config)
 
 def sanitize_input(text):
     """
